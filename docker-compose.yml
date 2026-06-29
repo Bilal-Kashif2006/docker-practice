@@ -1,15 +1,4 @@
 services:
-<<<<<<< HEAD
-  code_practice:
-    build:
-      context: .
-      dockerfile: dockerfile.dev
-    ports:
-      - "5173:5173"
-    volumes:
-      - .:/app
-      - /app/node_modules
-=======
   postgres:
     image: postgres:latest
     container_name: postgres
@@ -55,4 +44,3 @@ services:
     volumes:
       - /app/node_modules
       - ./worker:/app
->>>>>>> ebb9372 (initial commit)
