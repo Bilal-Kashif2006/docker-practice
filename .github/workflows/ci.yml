@@ -28,21 +28,55 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+
       # Spins up docker compose to run test scripts
       - name: Build and Test with Compose
         run: |
           docker compose build
           docker compose up -d
-          # Change "app" to your service name and insert your test command
-          docker compose exec -T app npm test || true
+          docker compose exec -T -e CI=true client npm test
           docker compose down
 
-      # Native optimized step to push to GitHub Packages
-      - name: Build and Push Final Image
+      # Build and Push each service's image to GHCR
+      - name: Build and Push Client Image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./client
+          file: ./client/dockerfile.dev
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ env.REPO_LOWER }}-client:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Push Server Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./server
+          file: ./server/dockerfile.dev
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/${{ env.REPO_LOWER }}-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Push Worker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./worker
+          file: ./worker/dockerfile.dev
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/${{ env.REPO_LOWER }}-worker:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Push Nginx Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./nginx
+          file: ./nginx/dockerfile.dev
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/${{ env.REPO_LOWER }}-nginx:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
